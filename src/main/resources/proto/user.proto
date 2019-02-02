@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package protobuf;
+
+option java_package = "com.eren.noddus.protobufwriter.model";
+option java_outer_classname = "UserProto";
+
+message User {
+    required string name = 1;
+    required int32 id = 2;
+}
