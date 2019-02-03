@@ -1,6 +1,5 @@
 package com.eren.noddus.protobufwriter.model;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,15 +50,6 @@ public class UserProtoUnitTest {
         //then
         assertThat(user.getName()).isEqualTo(deserializedUser.getName());
         assertThat(user.getId()).isEqualTo(deserializedUser.getId());
-    }
-
-    @Test
-    public void equals_givenUsersWithSameValues_thenShouldReturnTrue() throws IOException {
-        int id = new Random().nextInt();
-        String name = "Nick Doe " + id;
-        UserModel userModel = new UserModel(id, name);
-        UserModel userModel2 = new UserModel(id, name);
-        Assert.assertTrue(userModel.equals(userModel2));
     }
 
 }
