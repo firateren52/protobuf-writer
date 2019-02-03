@@ -1,10 +1,7 @@
 package com.eren.noddus.protobufwriter.service;
 
-import com.eren.noddus.protobufwriter.model.Model;
-import com.eren.noddus.protobufwriter.model.UserModel;
-import com.eren.noddus.protobufwriter.model.UserProto;
-import com.google.protobuf.UninitializedMessageException;
-import org.junit.Before;
+import com.eren.noddus.protobufwriter.model.*;
+import com.google.protobuf.Message;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,45 +23,101 @@ import static org.junit.Assert.assertFalse;
 
 public class FileServiceTest {
 
-    @Before
-    public void cleanup() throws IOException {
-        Path modelPath = Paths.get("data/users");
-        if (Files.isDirectory(modelPath)) {
-            Files.walk(modelPath)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-
-            assertFalse("Directory still exists",
-                    Files.exists(modelPath));
-        }
-    }
-
     @Test
-    public void saveModel_givenMultiThreadRequests_thenShouldAppendToFiles() throws IOException, FileNotFoundException {
-        FileService fileService = new FileService("users");
-        List<Model> models = new ArrayList<>();
+    public void saveModel_givenMultiThreadRequests_thenShouldAppendToFiles() throws IOException {
+        cleanDirectories("data/user2");
+        FileService fileService = new FileService("user2", 5000);
+        List<Message> models = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
             int id = new Random().nextInt();
             String name = "Nick Doe " + i;
             UserModel userModel = new UserModel(i, name);
-            models.add(userModel);
+            models.add(userModel.getMessage());
             new Thread(() -> {
                 try {
-                    fileService.saveModel(userModel, 3000);
+                    fileService.saveModel(userModel);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }).start();
         }
 
-        readAndCompareDeserializedModels(models);
+        readAndCompareDeserializedUsers(models, "data/user2");
     }
 
-    private void readAndCompareDeserializedModels(List<Model> models) throws IOException {
+    @Test
+    public void addModel_givenMultiThreadRequestsWithQueue_thenShouldAppendToFiles() throws IOException, FileNotFoundException, InterruptedException {
+        cleanDirectories("data/user");
+        FileService fileService = new FileService("user", 5000);
+        List<Message> models = new ArrayList<>();
+        for (int i = 0; i < 100000; i++) {
+            int id = new Random().nextInt();
+            String name = "Nick Doe " + i;
+            UserModel userModel = new UserModel(i, name);
+            models.add(userModel.getMessage());
+            new Thread(() -> {
+                fileService.addModel(userModel);
+            }).start();
+        }
+        Thread.sleep(1000);
+
+        readAndCompareDeserializedUsers(models, "data/user");
+    }
+
+    @Test
+    public void addModel_givenMultiThreadRequestsWithBufferedQueue_thenShouldAppendToFiles() throws IOException, FileNotFoundException, InterruptedException {
+        cleanDirectories("data/item");
+        FileService fileService = new FileService("item", 5000);
+        List<Message> models = new ArrayList<>();
+        for (int i = 0; i < 100000; i++) {
+            String name = "Nick Doe " + i;
+            ItemProto.Item item = ItemProto.Item.newBuilder().setId(i).setName(name).build();
+            ItemModel itemModel = new ItemModel(item);
+            models.add(item);
+            new Thread(() -> {
+                fileService.addBufferedModel(itemModel);
+            }).start();
+        }
+        Thread.sleep(1000);
+
+        readAndCompareDeserializedItems(models, "data/item");
+    }
+
+    private void readAndCompareDeserializedItems(List<Message> models, String path) throws IOException {
         // Read models from files
-        Path modelPath = Paths.get("data/users");
-        List<Model> deserializedModels = new ArrayList<>();
+        Path modelPath = Paths.get(path);
+        List<Message> deserializedModels = new ArrayList<>();
+        if (Files.isDirectory(modelPath)) {
+
+            List<File> files = Files.walk(modelPath).filter(Files::isRegularFile)
+                    .map(Path::toFile).collect(Collectors.toList());
+            files.forEach(file -> {
+                try {
+                    FileInputStream fis = new FileInputStream(file);
+                    while (true) {
+                        ItemProto.Items deserializedItems = ItemProto.Items.parseDelimitedFrom(fis);
+                        if (deserializedItems == null) {
+                            break;
+                        }
+                        deserializedModels.addAll(deserializedItems.getItemList());
+                    }
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            assertThat(models).containsExactlyInAnyOrder(deserializedModels.toArray(new Message[deserializedModels.size()]));
+        } else {
+            assertFalse("Directory still exists",
+                    Files.exists(modelPath));
+        }
+    }
+
+    private void readAndCompareDeserializedUsers(List<Message> models, String path) throws IOException {
+        // Read models from files
+        Path modelPath = Paths.get(path);
+        List<Message> deserializedModels = new ArrayList<>();
         if (Files.isDirectory(modelPath)) {
 
             List<File> files = Files.walk(modelPath).filter(Files::isRegularFile)
@@ -77,7 +130,7 @@ public class FileServiceTest {
                         if (deserializedUser == null) {
                             break;
                         }
-                        deserializedModels.add(new UserModel(deserializedUser));
+                        deserializedModels.add(deserializedUser);
                     }
                     fis.close();
                 } catch (IOException e) {
@@ -85,8 +138,21 @@ public class FileServiceTest {
                 }
             });
 
-            assertThat(models).containsExactlyInAnyOrder(deserializedModels.toArray(new Model[deserializedModels.size()]));
+            assertThat(models).containsExactlyInAnyOrder(deserializedModels.toArray(new Message[deserializedModels.size()]));
         } else {
+            assertFalse("Directory still exists",
+                    Files.exists(modelPath));
+        }
+    }
+
+    private void cleanDirectories(String path) throws IOException {
+        Path modelPath = Paths.get(path);
+        if (Files.isDirectory(modelPath)) {
+            Files.walk(modelPath)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+
             assertFalse("Directory still exists",
                     Files.exists(modelPath));
         }

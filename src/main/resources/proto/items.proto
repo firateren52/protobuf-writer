@@ -3,9 +3,13 @@ syntax = "proto3";
 package protobuf;
 
 option java_package = "com.eren.noddus.protobufwriter.model";
-option java_outer_classname = "UserProto";
+option java_outer_classname = "ItemProto";
 
-message User {
+message Item {
      string name = 1;
      int32 id = 2;
+}
+
+message Items {
+     repeated Item item = 1;
 }

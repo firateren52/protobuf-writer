@@ -8,7 +8,7 @@ public class UserService {
 
     public boolean saveUser(int id, String name) throws IOException {
         UserModel userModel = new UserModel(id, name);
-        FileService fileService = new FileService("users");
+        FileService fileService = new FileService("users", 3000);
         return true;
     }
 }

@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class UserModel implements Model {
     private final UserProto.User user;
-    private final String metadata = "users";
+    private final String metadata = "user";
 
     public UserModel(UserProto.User user) {
         this.user = user;
