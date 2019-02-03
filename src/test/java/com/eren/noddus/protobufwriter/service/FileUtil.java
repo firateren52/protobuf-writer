@@ -21,6 +21,15 @@ import static org.junit.Assert.assertFalse;
 
 public class FileUtil {
 
+    /**
+     * Read messages from file and compare with actual messages.
+     *
+     * @param messages           the messages
+     * @param messageType        the message type
+     * @param parseDelimitedFrom the parse delimited from
+     * @throws IOException          the io exception
+     * @throws InterruptedException the interrupted exception
+     */
     public static void readAndCompareDeserializedMessages(List<Message> messages, String messageType, Function<InputStream, Message> parseDelimitedFrom) throws IOException, InterruptedException {
         Thread.sleep(4000);
 

@@ -1,0 +1,12 @@
+info:
+  component: Protobuf based file writer
+
+server:
+  port: ${PORT:${vcap.application.port:8017}}
+
+logging:
+  file: log/protobuf-writer.log
+
+spring:
+  application:
+      name: protobuf-writer

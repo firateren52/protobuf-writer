@@ -39,8 +39,6 @@ public class ItemsWriterServiceTest {
             }));
         }
 
-        //TODO(firat.eren) fix here
-
         Function<InputStream, Message> parseItemsDelimitedFrom = (fis -> {
             try {
                 return ItemProto.Items.parseDelimitedFrom(fis);
